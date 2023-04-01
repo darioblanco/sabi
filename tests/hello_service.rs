@@ -48,5 +48,5 @@ async fn test_hello_with_params_empty_name() {
 	let resp = test::call_service(&mut app, req).await;
 	assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
 	let body = test::read_body(resp).await;
-	assert_eq!(body, "\"Name cannot be empty.\"");
+	assert_eq!(body, "Name cannot be empty");
 }

@@ -1,5 +1,6 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{error, post, web, Error, HttpResponse, Responder};
 use serde_derive::{Deserialize, Serialize};
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct GoodbyeRequest {
 	pub reason: String,
@@ -23,13 +24,13 @@ async fn goodbye_world() -> impl Responder {
 }
 
 #[post("/goodbye/reason")]
-async fn goodbye_reason(body: web::Json<GoodbyeRequest>) -> impl Responder {
+async fn goodbye_reason(body: web::Json<GoodbyeRequest>) -> Result<HttpResponse, Error> {
 	let reason = &body.reason;
 	if reason.is_empty() {
-		return HttpResponse::BadRequest().json("Reason cannot be empty");
+		return Err(error::ErrorBadRequest("Reason cannot be empty"));
 	}
 	let response = GoodbyeResponse {
 		message: format!("Goodbye World! Reason: {}", reason),
 	};
-	HttpResponse::Ok().json(response)
+	Ok(HttpResponse::Ok().json(response))
 }

@@ -1,7 +1,7 @@
-use actix_web::{get, post, web, HttpResponse, Responder};
+use actix_web::{error, get, post, web, Error, HttpResponse, Responder};
 use serde_derive::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize, Serialize)]
 pub struct HelloRequest {
 	pub name: String,
 }
@@ -24,13 +24,13 @@ async fn hello_world() -> impl Responder {
 }
 
 #[post("/hello")]
-async fn hello_with_params(request_body: web::Json<HelloRequest>) -> impl Responder {
+async fn hello_with_params(request_body: web::Json<HelloRequest>) -> Result<HttpResponse, Error> {
 	let name = &request_body.name;
 	if name.is_empty() {
-		return HttpResponse::BadRequest().json("Name cannot be empty.");
+		return Err(error::ErrorBadRequest("Name cannot be empty"));
 	}
 	let response = HelloResponse {
 		message: format!("Hello, {}!", name),
 	};
-	HttpResponse::Ok().json(response)
+	Ok(HttpResponse::Ok().json(response))
 }

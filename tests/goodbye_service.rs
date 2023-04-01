@@ -48,5 +48,5 @@ async fn test_goodbye_reason_empty() {
 	let resp = test::call_service(&mut app, req).await;
 	assert_eq!(resp.status(), http::StatusCode::BAD_REQUEST);
 	let body = test::read_body(resp).await;
-	assert_eq!(body, "\"Reason cannot be empty\"");
+	assert_eq!(body, "Reason cannot be empty");
 }
