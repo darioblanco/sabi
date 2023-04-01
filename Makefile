@@ -30,7 +30,7 @@ test:
 	cargo test
 
 # Hot reload
-watch:	watch.sh
+watch:
 	./watch.sh
 
 .PHONY: build coverage install run start test watch

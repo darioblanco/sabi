@@ -5,11 +5,12 @@ authors = ["Dario Blanco Iturriaga <dblancoit@gmail.com>"]
 edition = "2021"
 
 [dependencies]
-warp = "0.3"
-tokio = { version = "1", features = ["full"] }
+dotenv = "0.15"
 serde = { version = "1.0", features = ["derive"] }
+tokio = { version = "1", features = ["full"] }
 tracing = "0.1"
 tracing-subscriber = "0.2"
+warp = "0.3"
 
 [dev-dependencies]
 hyper = "0.14"

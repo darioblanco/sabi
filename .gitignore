@@ -12,3 +12,6 @@ Cargo.lock
 # Coverage files
 **/cargo-test-*
 coverage/
+
+# Environment file
+.env
