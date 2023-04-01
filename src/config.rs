@@ -1,6 +1,6 @@
+use log::LevelFilter;
 use std::env;
 use std::net::SocketAddr;
-use tracing::Level;
 
 pub trait Environment {
 	fn get_var(&self, var: &str) -> Result<String, env::VarError>;
@@ -14,10 +14,19 @@ impl Environment for SystemEnvironment {
 	}
 }
 
-#[derive(Debug)]
+#[derive(Copy, Debug)]
 pub struct Config {
 	pub api_address: SocketAddr,
-	pub log_level: Level,
+	pub log_level: LevelFilter,
+}
+
+impl Clone for Config {
+	fn clone(&self) -> Self {
+		Self {
+			api_address: self.api_address.clone(),
+			log_level: self.log_level.clone(),
+		}
+	}
 }
 
 impl Config {
@@ -41,17 +50,57 @@ impl Config {
 			.expect("Failed to parse API_ADDRESS and API_PORT");
 
 		let log_level = match log_level.to_lowercase().as_str() {
-			"trace" => Level::TRACE,
-			"debug" => Level::DEBUG,
-			"info" => Level::INFO,
-			"warn" => Level::WARN,
-			"error" => Level::ERROR,
-			_ => Level::INFO,
+			"trace" => LevelFilter::Trace,
+			"debug" => LevelFilter::Debug,
+			"info" => LevelFilter::Info,
+			"warn" => LevelFilter::Warn,
+			"error" => LevelFilter::Error,
+			_ => LevelFilter::Info,
 		};
 
 		Config {
 			api_address,
 			log_level,
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	struct MockEnvironment {
+		vars: std::collections::HashMap<String, String>,
+	}
+
+	impl Environment for MockEnvironment {
+		fn get_var(&self, var: &str) -> Result<String, env::VarError> {
+			match self.vars.get(var) {
+				Some(val) => Ok(val.to_owned()),
+				None => Err(env::VarError::NotPresent),
+			}
+		}
+	}
+
+	#[test]
+	fn test_config_from_env_defaults() {
+		let env = MockEnvironment {
+			vars: std::collections::HashMap::new(),
+		};
+		let config = Config::from_env(&env);
+		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
+		assert_eq!(config.log_level, LevelFilter::Info);
+	}
+
+	#[test]
+	fn test_config_from_env_custom() {
+		let mut vars = std::collections::HashMap::new();
+		vars.insert("API_ADDRESS".to_string(), "0.0.0.0".to_string());
+		vars.insert("API_PORT".to_string(), "8080".to_string());
+		vars.insert("LOG_LEVEL".to_string(), "warn".to_string());
+		let env = MockEnvironment { vars };
+		let config = Config::from_env(&env);
+		assert_eq!(config.api_address, "0.0.0.0:8080".parse().unwrap());
+		assert_eq!(config.log_level, LevelFilter::Warn);
 	}
 }

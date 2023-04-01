@@ -1,16 +1,33 @@
 
 @baseUrl = http://localhost:3030
 
-########################################################################
-###########                      Hello                       ###########
-########################################################################
-GET {{baseUrl}}/hello/myname HTTP/1.1
+GET {{baseUrl}}/hello HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
-########################################################################
-###########                      Hello error                 ###########
-########################################################################
-GET {{baseUrl}}/hello/a HTTP/1.1
+###
+
+POST {{baseUrl}}/hello HTTP/1.1
 Accept: application/json
 Content-Type: application/json
+
+{
+  "name": "Dario"
+}
+
+
+###
+
+POST {{baseUrl}}/goodbye HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+###
+
+POST {{baseUrl}}/goodbye/reason HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "reason": "Bye bye"
+}
