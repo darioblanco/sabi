@@ -1,0 +1,16 @@
+
+@baseUrl = http://localhost:3030
+
+########################################################################
+###########                      Hello                       ###########
+########################################################################
+GET {{baseUrl}}/hello/myname HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+########################################################################
+###########                      Hello error                 ###########
+########################################################################
+GET {{baseUrl}}/hello/a HTTP/1.1
+Accept: application/json
+Content-Type: application/json

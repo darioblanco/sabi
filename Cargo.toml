@@ -1,0 +1,20 @@
+[package]
+name = "senjin"
+version = "0.1.0"
+authors = ["Dario Blanco Iturriaga <dblancoit@gmail.com>"]
+edition = "2021"
+
+[dependencies]
+warp = "0.3"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+tracing = "0.1"
+tracing-subscriber = "0.2"
+
+[dev-dependencies]
+hyper = "0.14"
+serde_json = "1.0"
+
+[lib]
+name = "senjin"
+path = "src/main.rs"
