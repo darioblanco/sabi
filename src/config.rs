@@ -23,23 +23,6 @@ pub struct Config {
 }
 
 impl Config {
-	pub fn from_params(version: String) -> Config {
-		let api_address = "127.0.0.1".to_string();
-		let api_port: u16 = 3030;
-		let log_level = LevelFilter::Info;
-		let version = Arc::new(version);
-
-		let api_address = format!("{}:{}", api_address, api_port)
-			.parse()
-			.expect("Failed to parse API_ADDRESS and API_PORT");
-
-		Config {
-			api_address,
-			log_level,
-			version,
-		}
-	}
-
 	pub fn from_env<T: Environment>(env: &T) -> Config {
 		dotenv::dotenv().ok();
 
@@ -78,6 +61,23 @@ impl Config {
 			version,
 		}
 	}
+
+	pub fn from_params(version: String) -> Config {
+		let api_address = "127.0.0.1".to_string();
+		let api_port: u16 = 3030;
+		let log_level = LevelFilter::Info;
+		let version = Arc::new(version);
+
+		let api_address = format!("{}:{}", api_address, api_port)
+			.parse()
+			.expect("Failed to parse API_ADDRESS and API_PORT");
+
+		Config {
+			api_address,
+			log_level,
+			version,
+		}
+	}
 }
 
 #[cfg(test)]
@@ -105,6 +105,7 @@ mod tests {
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
 		assert_eq!(config.log_level, LevelFilter::Info);
+		assert_eq!(config.version.to_string(), "experimental".to_string());
 	}
 
 	#[test]
@@ -117,5 +118,14 @@ mod tests {
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "0.0.0.0:8080".parse().unwrap());
 		assert_eq!(config.log_level, LevelFilter::Warn);
+		assert_eq!(config.version.to_string(), "experimental".to_string());
+	}
+
+	#[test]
+	fn test_config_from_params() {
+		let config = Config::from_params("test".to_string());
+		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
+		assert_eq!(config.log_level, LevelFilter::Info);
+		assert_eq!(config.version.to_string(), "test".to_string());
 	}
 }
