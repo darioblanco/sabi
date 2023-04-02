@@ -1,6 +1,7 @@
 use log::LevelFilter;
 use std::env;
 use std::net::SocketAddr;
+use std::sync::Arc;
 
 pub trait Environment {
 	fn get_var(&self, var: &str) -> Result<String, env::VarError>;
@@ -14,22 +15,31 @@ impl Environment for SystemEnvironment {
 	}
 }
 
-#[derive(Copy, Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
 	pub api_address: SocketAddr,
 	pub log_level: LevelFilter,
-}
-
-impl Clone for Config {
-	fn clone(&self) -> Self {
-		Self {
-			api_address: self.api_address.clone(),
-			log_level: self.log_level.clone(),
-		}
-	}
+	pub version: Arc<String>,
 }
 
 impl Config {
+	pub fn from_params(version: String) -> Config {
+		let api_address = "127.0.0.1".to_string();
+		let api_port: u16 = 3030;
+		let log_level = LevelFilter::Info;
+		let version = Arc::new(version);
+
+		let api_address = format!("{}:{}", api_address, api_port)
+			.parse()
+			.expect("Failed to parse API_ADDRESS and API_PORT");
+
+		Config {
+			api_address,
+			log_level,
+			version,
+		}
+	}
+
 	pub fn from_env<T: Environment>(env: &T) -> Config {
 		dotenv::dotenv().ok();
 
@@ -44,6 +54,10 @@ impl Config {
 		let log_level = env
 			.get_var("LOG_LEVEL")
 			.unwrap_or_else(|_| "info".to_string());
+		let version = env
+			.get_var("VERSION")
+			.unwrap_or_else(|_| "experimental".to_string());
+		let version = Arc::new(version);
 
 		let api_address = format!("{}:{}", api_address, api_port)
 			.parse()
@@ -61,6 +75,7 @@ impl Config {
 		Config {
 			api_address,
 			log_level,
+			version,
 		}
 	}
 }

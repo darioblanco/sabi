@@ -16,6 +16,7 @@ serde_derive = "1.0"
 dotenv = "0.15"
 
 [dev-dependencies]
+actix-http = "3.3.1"
 serde_json = "1.0"
 
 [lib]
