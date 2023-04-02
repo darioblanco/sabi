@@ -1,4 +1,4 @@
-use actix_web::{error, get, post, web, Error, HttpResponse, Responder};
+use actix_web::{error, get, post, web, Error, Responder};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -16,15 +16,15 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[get("/hello")]
-async fn hello_world() -> impl Responder {
+async fn hello_world() -> Result<impl Responder, Error> {
 	let response = HelloResponse {
 		message: "Hello, World!".to_string(),
 	};
-	HttpResponse::Ok().json(response)
+	Ok(web::Json(response))
 }
 
 #[post("/hello")]
-async fn hello_with_params(request_body: web::Json<HelloRequest>) -> Result<HttpResponse, Error> {
+async fn hello_with_params(request_body: web::Json<HelloRequest>) -> Result<impl Responder, Error> {
 	let name = &request_body.name;
 	if name.is_empty() {
 		return Err(error::ErrorBadRequest("Name cannot be empty"));
@@ -32,5 +32,5 @@ async fn hello_with_params(request_body: web::Json<HelloRequest>) -> Result<Http
 	let response = HelloResponse {
 		message: format!("Hello, {}!", name),
 	};
-	Ok(HttpResponse::Ok().json(response))
+	Ok(web::Json(response))
 }

@@ -1,4 +1,4 @@
-use actix_web::{error, post, web, Error, HttpResponse, Responder};
+use actix_web::{error, post, web, Error, Responder};
 use serde_derive::{Deserialize, Serialize};
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -16,15 +16,15 @@ pub fn routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[post("/goodbye")]
-async fn goodbye_world() -> impl Responder {
+async fn goodbye_world() -> Result<impl Responder, Error> {
 	let response = GoodbyeResponse {
 		message: "Goodbye, World!".to_string(),
 	};
-	HttpResponse::Ok().json(response)
+	Ok(web::Json(response))
 }
 
 #[post("/goodbye/reason")]
-async fn goodbye_reason(body: web::Json<GoodbyeRequest>) -> Result<HttpResponse, Error> {
+async fn goodbye_reason(body: web::Json<GoodbyeRequest>) -> Result<impl Responder, Error> {
 	let reason = &body.reason;
 	if reason.is_empty() {
 		return Err(error::ErrorBadRequest("Reason cannot be empty"));
@@ -32,5 +32,5 @@ async fn goodbye_reason(body: web::Json<GoodbyeRequest>) -> Result<HttpResponse,
 	let response = GoodbyeResponse {
 		message: format!("Goodbye World! Reason: {}", reason),
 	};
-	Ok(HttpResponse::Ok().json(response))
+	Ok(web::Json(response))
 }
