@@ -1,7 +1,7 @@
-use log::LevelFilter;
 use std::env;
 use std::net::SocketAddr;
 use std::sync::Arc;
+use tracing::Level;
 
 pub trait Environment {
 	fn get_var(&self, var: &str) -> Result<String, env::VarError>;
@@ -18,7 +18,7 @@ impl Environment for SystemEnvironment {
 #[derive(Clone, Debug)]
 pub struct Config {
 	pub api_address: SocketAddr,
-	pub log_level: LevelFilter,
+	pub log_level: Level,
 	pub version: Arc<String>,
 }
 
@@ -47,12 +47,12 @@ impl Config {
 			.expect("Failed to parse API_ADDRESS and API_PORT");
 
 		let log_level = match log_level.to_lowercase().as_str() {
-			"trace" => LevelFilter::Trace,
-			"debug" => LevelFilter::Debug,
-			"info" => LevelFilter::Info,
-			"warn" => LevelFilter::Warn,
-			"error" => LevelFilter::Error,
-			_ => LevelFilter::Info,
+			"trace" => Level::TRACE,
+			"debug" => Level::DEBUG,
+			"info" => Level::INFO,
+			"warn" => Level::WARN,
+			"error" => Level::ERROR,
+			_ => Level::INFO,
 		};
 
 		Config {
@@ -65,7 +65,7 @@ impl Config {
 	pub fn from_params(version: String) -> Config {
 		let api_address = "127.0.0.1".to_string();
 		let api_port: u16 = 3030;
-		let log_level = LevelFilter::Info;
+		let log_level = Level::INFO;
 		let version = Arc::new(version);
 
 		let api_address = format!("{}:{}", api_address, api_port)
@@ -104,7 +104,7 @@ mod tests {
 		};
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
-		assert_eq!(config.log_level, LevelFilter::Info);
+		assert_eq!(config.log_level, Level::INFO);
 		assert_eq!(config.version.to_string(), "experimental".to_string());
 	}
 
@@ -117,7 +117,7 @@ mod tests {
 		let env = MockEnvironment { vars };
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "0.0.0.0:8080".parse().unwrap());
-		assert_eq!(config.log_level, LevelFilter::Warn);
+		assert_eq!(config.log_level, Level::WARN);
 		assert_eq!(config.version.to_string(), "experimental".to_string());
 	}
 
@@ -125,7 +125,7 @@ mod tests {
 	fn test_config_from_params() {
 		let config = Config::from_params("test".to_string());
 		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
-		assert_eq!(config.log_level, LevelFilter::Info);
+		assert_eq!(config.log_level, Level::INFO);
 		assert_eq!(config.version.to_string(), "test".to_string());
 	}
 }
