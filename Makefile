@@ -23,7 +23,7 @@ run: start
 
 # Start the application
 start:
-	RUST_LOG=info ./target/release/senjin
+	RUST_LOG=info ./target/release/sabi
 
 # Test the application
 test:
@@ -39,7 +39,7 @@ watch:
 # Docker & Podman #
 ###################
 
-DOCKER_IMAGE_NAME=senjin
+DOCKER_IMAGE_NAME=sabi
 DOCKER_IMAGE_TAG=latest
 DOCKER_IMAGE=$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 

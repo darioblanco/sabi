@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use axum::Router;
 use hyper::{Body, Request, StatusCode};
-use senjin::{
+use sabi::{
 	config,
 	services::hello::{routes, HelloResponse},
 };

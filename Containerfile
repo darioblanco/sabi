@@ -17,7 +17,7 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 
 # Copy the application binary into the container
-COPY --from=build /usr/src/app/target/release/senjin /usr/local/bin/senjin
+COPY --from=build /usr/src/app/target/release/sabi /usr/local/bin/sabi
 
 # Set the environment variables needed by the application
 ENV API_ADDRESS=0.0.0.0:3030
@@ -27,4 +27,4 @@ ENV LOG_LEVEL=info
 EXPOSE 3030
 
 # Start the application when the container starts
-CMD ["/usr/local/bin/senjin"]
+CMD ["/usr/local/bin/sabi"]
