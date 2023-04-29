@@ -12,6 +12,7 @@ pub mod middleware;
 pub mod services;
 
 #[tokio::main]
+#[cfg(not(tarpaulin_include))]
 pub async fn main() {
 	let config = Arc::new(config::Config::from_env(&config::SystemEnvironment));
 	let api_address: SocketAddr = config.api_address;
@@ -50,6 +51,7 @@ pub async fn main() {
 		.unwrap();
 }
 
+#[cfg(not(tarpaulin_include))]
 async fn shutdown_signal() {
 	let ctrl_c = async {
 		signal::ctrl_c()

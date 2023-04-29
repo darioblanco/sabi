@@ -9,14 +9,11 @@ build:
 
 # Test the application with coverage enabled
 coverage:
-	CARGO_INCREMENTAL=0 RUSTFLAGS='-Cinstrument-coverage' LLVM_PROFILE_FILE='cargo-test-%p-%m.profraw' cargo test
-	grcov . --binary-path ./target/debug/deps/ -s . -t html --branch --ignore-not-existing --ignore "tests/*" --ignore "src/main.rs" -o coverage/html
-	grcov . --binary-path ./target/debug/deps/ -s . -t lcov --branch --ignore-not-existing --ignore "tests/*" --ignore "src/main.rs" -o coverage/tests.lcov
-	rm -rf **/*.profraw
+	cargo tarpaulin --exclude-files src/main.rs
 
 # Install cargo tools
 install:
-	cargo install cargo-watch grcov
+	cargo install cargo-tarpaulin cargo-watch grcov
 
 # Run the application (alias for start)
 run: start
