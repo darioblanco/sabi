@@ -1,8 +1,9 @@
-use axum::{http::Request, routing::get, Router};
+use axum::{routing::get, Router};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
-use tower_http::trace::TraceLayer;
-use tracing::{debug, info};
+use tower_http::trace::{self, TraceLayer};
+use tracing::{debug, info, Level};
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
 
 pub mod config;
 pub mod errors;
@@ -15,8 +16,9 @@ pub async fn main() {
 	let config = Arc::new(config::Config::from_env(&config::SystemEnvironment));
 	let api_address: SocketAddr = config.api_address;
 
-	tracing_subscriber::fmt()
-		.with_max_level(config.log_level)
+	tracing_subscriber::registry()
+		.with(EnvFilter::try_new(config.log_level.to_string()).unwrap()) // Only log the configured level or above
+		.with(tracing_subscriber::fmt::layer())
 		.init();
 
 	debug!("Loaded environment variables {:?}", config);
@@ -29,11 +31,12 @@ pub async fn main() {
 
 	// add middlewares
 	let app = app
-		.layer(TraceLayer::new_for_http()
-			.make_span_with(|request: &Request<_>| {
-				tracing::info_span!("request", method = %request.method(), uri = %request.uri())
-			})
-		).layer(middleware::cors(api_address));
+		.layer(
+			TraceLayer::new_for_http()
+				.make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+				.on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
+		)
+		.layer(middleware::cors(api_address));
 
 	// add a fallback service for handling routes to unknown paths
 	let app = app.fallback(handlers::not_found);
