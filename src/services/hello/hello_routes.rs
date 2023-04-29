@@ -11,12 +11,11 @@ use crate::errors::AppError;
 
 use super::{HelloRequest, HelloResponse};
 
-pub fn routes(config: Arc<Config>) -> Router {
+pub fn routes() -> Router<Arc<Config>> {
 	// /hello
 	Router::new()
 		.route("/", get(hello_world))
 		.route("/", post(hello_with_params))
-		.with_state(config)
 }
 
 async fn hello_world(

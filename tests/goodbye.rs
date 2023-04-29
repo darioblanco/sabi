@@ -1,11 +1,17 @@
+use std::sync::Arc;
+
 use axum::Router;
 use hyper::{Body, Request, StatusCode};
-use sabi::services::goodbye::{routes, GoodbyeResponse};
+use sabi::{
+	config::Config,
+	services::goodbye::{routes, GoodbyeResponse},
+};
 use serde_json::json;
 use tower::ServiceExt;
 
 fn create_router() -> Router {
-	return Router::new().nest("/goodbye", routes());
+	let config = Arc::new(Config::from_params("test".to_string()));
+	return Router::new().nest("/goodbye", routes()).with_state(config);
 }
 
 #[tokio::test]

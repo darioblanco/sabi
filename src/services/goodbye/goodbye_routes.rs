@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use axum::{http, routing::post, Json, Router};
 
-use crate::errors::AppError;
+use crate::{config::Config, errors::AppError};
 
 use super::goodbye_dto::{GoodbyeRequest, GoodbyeResponse};
 
-pub fn routes() -> Router {
+pub fn routes() -> Router<Arc<Config>> {
 	// /goodbye
 	Router::new()
 		.route("/", post(goodbye_world))

@@ -27,8 +27,9 @@ pub async fn main() {
 	// add routes
 	let app = Router::new()
 		.route("/health", get(handlers::health))
-		.nest("/hello", services::hello::routes(config))
-		.nest("/goodbye", services::goodbye::routes());
+		.nest("/hello", services::hello::routes())
+		.nest("/goodbye", services::goodbye::routes())
+		.with_state(config);
 
 	// add middlewares
 	let app = app
