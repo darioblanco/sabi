@@ -1,6 +1,6 @@
 # sabi
 
-Rust backend
+Rust backend using Axum
 
 ## Development
 
