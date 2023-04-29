@@ -22,6 +22,7 @@ pub async fn main() {
 
 	let app = Router::new()
 		.layer(TraceLayer::new_for_http())
+		.nest("/health", services::health_service::routes())
 		.nest("/hello", services::hello_service::routes(config))
 		.nest("/goodbye", services::goodbye_service::routes());
 

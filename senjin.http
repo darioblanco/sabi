@@ -7,6 +7,16 @@ Content-Type: application/json
 
 ###
 
+GET {{baseUrl}}/health HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+{
+  "status": "OK"
+}
+
+###
+
 POST {{baseUrl}}/hello HTTP/1.1
 Accept: application/json
 Content-Type: application/json
