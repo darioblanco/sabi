@@ -1,3 +1,2 @@
-pub mod goodbye_service;
-pub mod health_service;
-pub mod hello_service;
+pub mod goodbye;
+pub mod hello;

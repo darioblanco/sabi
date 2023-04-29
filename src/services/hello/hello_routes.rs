@@ -4,22 +4,12 @@ use axum::{
 	routing::{get, post},
 	Json, Router,
 };
-use serde_derive::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::config::Config;
 use crate::errors::AppError;
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct HelloRequest {
-	pub name: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct HelloResponse {
-	pub message: String,
-	pub version: String,
-}
+use super::{HelloRequest, HelloResponse};
 
 pub fn routes(config: Arc<Config>) -> Router {
 	// /hello

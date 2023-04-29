@@ -1,15 +1,11 @@
-use axum::Router;
+use axum::{routing::get, Router};
 use hyper::{Body, Request, StatusCode};
-use senjin::services::health_service::{routes, HealthResponse};
+use senjin::handlers::{health, HealthResponse};
 use tower::ServiceExt;
-
-fn create_router() -> Router {
-	return Router::new().nest("/health", routes());
-}
 
 #[tokio::test]
 async fn test_health() {
-	let app = create_router();
+	let app = Router::new().route("/health", get(health));
 
 	let request = Request::builder()
 		.method("GET")

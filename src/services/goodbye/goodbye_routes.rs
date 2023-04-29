@@ -1,17 +1,8 @@
 use axum::{http, routing::post, Json, Router};
-use serde_derive::{Deserialize, Serialize};
 
 use crate::errors::AppError;
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct GoodbyeRequest {
-	pub reason: String,
-}
-
-#[derive(Debug, Serialize)]
-pub struct GoodbyeResponse {
-	pub message: String,
-}
+use super::goodbye_dto::{GoodbyeRequest, GoodbyeResponse};
 
 pub fn routes() -> Router {
 	// /goodbye

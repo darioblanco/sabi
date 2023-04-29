@@ -4,7 +4,7 @@ use axum::Router;
 use hyper::{Body, Request, StatusCode};
 use senjin::{
 	config,
-	services::hello_service::{routes, HelloResponse},
+	services::hello::{routes, HelloResponse},
 };
 use serde_json::json;
 use tower::ServiceExt;

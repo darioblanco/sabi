@@ -1,6 +1,6 @@
 use axum::Router;
 use hyper::{Body, Request, StatusCode};
-use senjin::services::goodbye_service::{routes, GoodbyeResponse};
+use senjin::services::goodbye::{routes, GoodbyeResponse};
 use serde_json::json;
 use tower::ServiceExt;
 
