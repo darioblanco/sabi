@@ -1,4 +1,4 @@
-use axum::{response::IntoResponse, Router};
+use axum::{http::Request, response::IntoResponse, Router};
 use hyper::StatusCode;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
@@ -7,6 +7,7 @@ use tracing::{debug, info};
 
 pub mod config;
 pub mod errors;
+pub mod middlewares;
 pub mod services;
 
 #[tokio::main]
@@ -20,11 +21,19 @@ pub async fn main() {
 
 	debug!("Loaded environment variables {:?}", config);
 
+	// add routes
 	let app = Router::new()
-		.layer(TraceLayer::new_for_http())
 		.nest("/health", services::health_service::routes())
 		.nest("/hello", services::hello_service::routes(config))
 		.nest("/goodbye", services::goodbye_service::routes());
+
+	// add middlewares
+	let app = app
+		.layer(TraceLayer::new_for_http()
+			.make_span_with(|request: &Request<_>| {
+				tracing::info_span!("request", method = %request.method(), uri = %request.uri())
+			})
+		).layer(middlewares::cors_middleware(api_address));
 
 	// add a fallback service for handling routes to unknown paths
 	let app = app.fallback(handler_404);

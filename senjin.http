@@ -1,6 +1,14 @@
 
 @baseUrl = http://localhost:3030
 
+###
+
+GET {{baseUrl}}/doesnotexist HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+###
+
 GET {{baseUrl}}/hello HTTP/1.1
 Accept: application/json
 Content-Type: application/json
