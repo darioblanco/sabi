@@ -1,4 +1,5 @@
 use axum::{routing::get, Router};
+use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
 use tower_http::trace::{self, TraceLayer};
@@ -11,25 +12,45 @@ pub mod handlers;
 pub mod middleware;
 pub mod services;
 
+#[derive(Clone)]
+pub struct AppState {
+	pub config: Arc<config::Config>,
+	pub oauth_client: Option<BasicClient>,
+}
+
 #[tokio::main]
 #[cfg(not(tarpaulin_include))]
 pub async fn main() {
+	// Load environment variables into the config
 	let config = Arc::new(config::Config::from_env(&config::SystemEnvironment));
 	let api_address: SocketAddr = config.api_address;
+	debug!("Loaded environment variables {:?}", config);
 
+	// Set up logging
 	tracing_subscriber::registry()
 		.with(EnvFilter::try_new(config.log_level.to_string()).unwrap()) // Only log the configured level or above
 		.with(tracing_subscriber::fmt::layer())
 		.init();
 
-	debug!("Loaded environment variables {:?}", config);
+	// Load Oauth client
+	let oauth_client = BasicClient::new(
+		ClientId::new(config.discord.client_id.to_string()),
+		Some(ClientSecret::new(config.discord.client_secret.to_string())),
+		AuthUrl::new(config.discord.auth_url.to_string()).unwrap(),
+		Some(TokenUrl::new(config.discord.token_url.to_string()).unwrap()),
+	)
+	.set_redirect_uri(RedirectUrl::new(config.discord.redirect_url.to_string()).unwrap());
 
-	// add routes
+	// add routes and their global state
+	let app_state = AppState {
+		config,
+		oauth_client: Some(oauth_client),
+	};
 	let app = Router::new()
 		.route("/health", get(handlers::health))
 		.nest("/hello", services::hello::routes())
 		.nest("/goodbye", services::goodbye::routes())
-		.with_state(config);
+		.with_state(app_state);
 
 	// add middlewares
 	let app = app

@@ -25,11 +25,11 @@ pub struct Config {
 
 #[derive(Clone, Debug)]
 pub struct DiscordConfig {
-	pub auth_url: String,
-	pub client_id: String,
-	pub client_secret: String,
-	pub redirect_url: String,
-	pub token_url: String,
+	pub auth_url: Arc<String>,
+	pub client_id: Arc<String>,
+	pub client_secret: Arc<String>,
+	pub redirect_url: Arc<String>,
+	pub token_url: Arc<String>,
 }
 
 impl Config {
@@ -83,11 +83,11 @@ impl Config {
 		Config {
 			api_address,
 			discord: DiscordConfig {
-				auth_url: discord_auth_url,
-				client_id: discord_client_id,
-				client_secret: discord_client_secret,
-				redirect_url: discord_redirect_url,
-				token_url: discord_token_url,
+				auth_url: Arc::new(discord_auth_url),
+				client_id: Arc::new(discord_client_id),
+				client_secret: Arc::new(discord_client_secret),
+				redirect_url: Arc::new(discord_redirect_url),
+				token_url: Arc::new(discord_token_url),
 			},
 			log_level,
 			version,
@@ -107,11 +107,11 @@ impl Config {
 		Config {
 			api_address,
 			discord: DiscordConfig {
-				auth_url: "test".to_string(),
-				client_id: "test".to_string(),
-				client_secret: "test".to_string(),
-				redirect_url: "test".to_string(),
-				token_url: "test".to_string(),
+				auth_url: Arc::new("test".to_string()),
+				client_id: Arc::new("test".to_string()),
+				client_secret: Arc::new("test".to_string()),
+				redirect_url: Arc::new("test".to_string()),
+				token_url: Arc::new("test".to_string()),
 			},
 			log_level,
 			version,
@@ -145,17 +145,20 @@ mod tests {
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
 		assert_eq!(
-			config.discord.auth_url,
+			config.discord.auth_url.to_string(),
 			"https://discord.com/api/oauth2/authorize?response_type=code".to_string()
 		);
-		assert_eq!(config.discord.client_id, "secret".to_string());
-		assert_eq!(config.discord.client_secret, "secret".to_string());
+		assert_eq!(config.discord.client_id.to_string(), "secret".to_string());
 		assert_eq!(
-			config.discord.redirect_url,
+			config.discord.client_secret.to_string(),
+			"secret".to_string()
+		);
+		assert_eq!(
+			config.discord.redirect_url.to_string(),
 			"http://127.0.0.1:3000/auth/authorized".to_string()
 		);
 		assert_eq!(
-			config.discord.token_url,
+			config.discord.token_url.to_string(),
 			"https://discord.com/api/oauth2/token".to_string()
 		);
 		assert_eq!(config.log_level, Level::INFO);
@@ -185,14 +188,23 @@ mod tests {
 		let env = MockEnvironment { vars };
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "0.0.0.0:8080".parse().unwrap());
-		assert_eq!(config.discord.auth_url, "https://authurl".to_string());
-		assert_eq!(config.discord.client_id, "secret".to_string());
-		assert_eq!(config.discord.client_secret, "secret".to_string());
 		assert_eq!(
-			config.discord.redirect_url,
+			config.discord.auth_url.to_string(),
+			"https://authurl".to_string()
+		);
+		assert_eq!(config.discord.client_id.to_string(), "secret".to_string());
+		assert_eq!(
+			config.discord.client_secret.to_string(),
+			"secret".to_string()
+		);
+		assert_eq!(
+			config.discord.redirect_url.to_string(),
 			"https://redirecturl".to_string()
 		);
-		assert_eq!(config.discord.token_url, "https://tokenurl".to_string());
+		assert_eq!(
+			config.discord.token_url.to_string(),
+			"https://tokenurl".to_string()
+		);
 		assert_eq!(config.log_level, Level::WARN);
 		assert_eq!(config.version.to_string(), "experimental".to_string());
 	}
@@ -201,11 +213,11 @@ mod tests {
 	fn test_config_from_params() {
 		let config = Config::from_params("test".to_string());
 		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
-		assert_eq!(config.discord.auth_url, "test".to_string());
-		assert_eq!(config.discord.client_id, "test".to_string());
-		assert_eq!(config.discord.client_secret, "test".to_string());
-		assert_eq!(config.discord.redirect_url, "test".to_string());
-		assert_eq!(config.discord.token_url, "test".to_string());
+		assert_eq!(config.discord.auth_url.to_string(), "test".to_string());
+		assert_eq!(config.discord.client_id.to_string(), "test".to_string());
+		assert_eq!(config.discord.client_secret.to_string(), "test".to_string());
+		assert_eq!(config.discord.redirect_url.to_string(), "test".to_string());
+		assert_eq!(config.discord.token_url.to_string(), "test".to_string());
 		assert_eq!(config.log_level, Level::INFO);
 		assert_eq!(config.version.to_string(), "test".to_string());
 	}

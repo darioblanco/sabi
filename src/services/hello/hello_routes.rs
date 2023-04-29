@@ -4,14 +4,13 @@ use axum::{
 	routing::{get, post},
 	Json, Router,
 };
-use std::sync::Arc;
 
-use crate::config::Config;
 use crate::errors::AppError;
+use crate::AppState;
 
 use super::{HelloRequest, HelloResponse};
 
-pub fn routes() -> Router<Arc<Config>> {
+pub fn routes() -> Router<AppState> {
 	// /hello
 	Router::new()
 		.route("/", get(hello_world))
@@ -19,17 +18,17 @@ pub fn routes() -> Router<Arc<Config>> {
 }
 
 async fn hello_world(
-	State(config): State<Arc<Config>>,
+	State(app_state): State<AppState>,
 ) -> Result<Json<HelloResponse>, http::StatusCode> {
 	let response = HelloResponse {
 		message: "Hello, World!".to_string(),
-		version: config.version.to_string(),
+		version: app_state.config.version.to_string(),
 	};
 	Ok(Json(response))
 }
 
 async fn hello_with_params(
-	State(config): State<Arc<Config>>,
+	State(app_state): State<AppState>,
 	Json(request_body): Json<HelloRequest>,
 ) -> Result<Json<HelloResponse>, AppError> {
 	let name = &request_body.name;
@@ -40,7 +39,7 @@ async fn hello_with_params(
 	}
 	let response = HelloResponse {
 		message: format!("Hello, {}!", name),
-		version: config.version.to_string(),
+		version: app_state.config.version.to_string(),
 	};
 	Ok(Json(response))
 }
