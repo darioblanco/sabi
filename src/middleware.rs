@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use axum::http::{HeaderValue, Method};
 use tower_http::cors::CorsLayer;
 
-pub fn cors_middleware(api_address: SocketAddr) -> CorsLayer {
+pub fn cors(api_address: SocketAddr) -> CorsLayer {
 	CorsLayer::new()
 		.allow_origin(
 			format!("http://{}", api_address)

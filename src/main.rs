@@ -7,7 +7,7 @@ use tracing::{debug, info};
 pub mod config;
 pub mod errors;
 pub mod handlers;
-pub mod middlewares;
+pub mod middleware;
 pub mod services;
 
 #[tokio::main]
@@ -33,7 +33,7 @@ pub async fn main() {
 			.make_span_with(|request: &Request<_>| {
 				tracing::info_span!("request", method = %request.method(), uri = %request.uri())
 			})
-		).layer(middlewares::cors_middleware(api_address));
+		).layer(middleware::cors(api_address));
 
 	// add a fallback service for handling routes to unknown paths
 	let app = app.fallback(handlers::not_found);
