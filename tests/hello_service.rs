@@ -9,10 +9,14 @@ use senjin::{
 use serde_json::json;
 use tower::ServiceExt;
 
+fn create_router() -> Router {
+	let config = Arc::new(config::Config::from_params("test".to_string()));
+	return Router::new().nest("/hello", routes(config));
+}
+
 #[tokio::test]
 async fn test_hello_world() {
-	let config = Arc::new(config::Config::from_params("test".to_string()));
-	let app = Router::new().nest("/hello", routes(config));
+	let app = create_router();
 
 	let request = Request::builder()
 		.method("GET")
@@ -34,8 +38,7 @@ async fn test_hello_world() {
 
 #[tokio::test]
 async fn test_hello_with_params() {
-	let config = Arc::new(config::Config::from_params("test".to_string()));
-	let app = Router::new().nest("/hello", routes(config));
+	let app = create_router();
 
 	let request = Request::builder()
 		.method("POST")
@@ -63,8 +66,7 @@ async fn test_hello_with_params() {
 
 #[tokio::test]
 async fn test_hello_with_params_empty_name() {
-	let config = Arc::new(config::Config::from_params("test".to_string()));
-	let app = Router::new().nest("/hello", routes(config));
+	let app = create_router();
 
 	let request = Request::builder()
 		.method("POST")

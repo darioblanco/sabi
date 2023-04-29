@@ -4,9 +4,13 @@ use senjin::services::goodbye_service::{routes, GoodbyeResponse};
 use serde_json::json;
 use tower::ServiceExt;
 
+fn create_router() -> Router {
+	return Router::new().nest("/goodbye", routes());
+}
+
 #[tokio::test]
 async fn test_goodbye_world() {
-	let app = Router::new().nest("/goodbye", routes());
+	let app = create_router();
 
 	let request = Request::builder()
 		.method("POST")
@@ -27,7 +31,7 @@ async fn test_goodbye_world() {
 
 #[tokio::test]
 async fn test_goodbye_reason() {
-	let app = Router::new().nest("/goodbye", routes());
+	let app = create_router();
 
 	let request = Request::builder()
 		.method("POST")
@@ -54,7 +58,7 @@ async fn test_goodbye_reason() {
 
 #[tokio::test]
 async fn test_goodbye_reason_empty() {
-	let app = Router::new().nest("/goodbye", routes());
+	let app = create_router();
 
 	let request = Request::builder()
 		.method("POST")
