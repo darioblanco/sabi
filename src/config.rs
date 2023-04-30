@@ -20,6 +20,7 @@ pub struct Config {
 	pub api_address: SocketAddr,
 	pub discord: DiscordConfig,
 	pub log_level: Level,
+	pub redis_url: Arc<String>,
 	pub version: Arc<String>,
 }
 
@@ -62,6 +63,9 @@ impl Config {
 		let log_level = env
 			.get_var("LOG_LEVEL")
 			.unwrap_or_else(|_| "info".to_string());
+		let redis_url = env
+			.get_var("REDIS_URL")
+			.unwrap_or_else(|_| "redis://127.0.0.1/".to_string());
 		let version = env
 			.get_var("VERSION")
 			.unwrap_or_else(|_| "experimental".to_string());
@@ -90,16 +94,16 @@ impl Config {
 				token_url: Arc::new(discord_token_url),
 			},
 			log_level,
+			redis_url: Arc::new(redis_url),
 			version,
 		}
 	}
 
 	pub fn from_params(version: String) -> Config {
-		let api_address = "127.0.0.1".to_string();
-		let api_port: u16 = 3030;
-		let log_level = Level::INFO;
 		let version = Arc::new(version);
 
+		let api_address = "127.0.0.1".to_string();
+		let api_port: u16 = 3030;
 		let api_address = format!("{}:{}", api_address, api_port)
 			.parse()
 			.expect("Failed to parse API_ADDRESS and API_PORT");
@@ -113,7 +117,8 @@ impl Config {
 				redirect_url: Arc::new("test".to_string()),
 				token_url: Arc::new("test".to_string()),
 			},
-			log_level,
+			log_level: Level::INFO,
+			redis_url: Arc::new("redis://127.0.0.1/".to_string()),
 			version,
 		}
 	}
@@ -161,6 +166,10 @@ mod tests {
 			config.discord.token_url.to_string(),
 			"https://discord.com/api/oauth2/token".to_string()
 		);
+		assert_eq!(
+			config.redis_url.to_string(),
+			"redis://127.0.0.1/".to_string()
+		);
 		assert_eq!(config.log_level, Level::INFO);
 		assert_eq!(config.version.to_string(), "experimental".to_string());
 	}
@@ -184,6 +193,7 @@ mod tests {
 			"DISCORD_TOKEN_URL".to_string(),
 			"https://tokenurl".to_string(),
 		);
+		vars.insert("REDIS_URL".to_string(), "myredis://127.0.0.1/".to_string());
 		vars.insert("LOG_LEVEL".to_string(), "warn".to_string());
 		let env = MockEnvironment { vars };
 		let config = Config::from_env(&env);
@@ -205,6 +215,10 @@ mod tests {
 			config.discord.token_url.to_string(),
 			"https://tokenurl".to_string()
 		);
+		assert_eq!(
+			config.redis_url.to_string(),
+			"myredis://127.0.0.1/".to_string()
+		);
 		assert_eq!(config.log_level, Level::WARN);
 		assert_eq!(config.version.to_string(), "experimental".to_string());
 	}
@@ -219,6 +233,10 @@ mod tests {
 		assert_eq!(config.discord.redirect_url.to_string(), "test".to_string());
 		assert_eq!(config.discord.token_url.to_string(), "test".to_string());
 		assert_eq!(config.log_level, Level::INFO);
+		assert_eq!(
+			config.redis_url.to_string(),
+			"redis://127.0.0.1/".to_string()
+		);
 		assert_eq!(config.version.to_string(), "test".to_string());
 	}
 }

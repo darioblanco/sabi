@@ -1,21 +1,15 @@
-use std::sync::Arc;
-
 use axum::Router;
 use hyper::{Body, Request, StatusCode};
-use sabi::{
-	config::Config,
-	services::hello::{routes, HelloResponse},
-	AppState,
-};
+use sabi::services::hello::{routes, HelloResponse};
 use serde_json::json;
 use tower::ServiceExt;
 
+mod common;
+
 fn create_router() -> Router {
-	let config = Arc::new(Config::from_params("test".to_string()));
-	return Router::new().nest("/hello", routes()).with_state(AppState {
-		config,
-		oauth_client: None,
-	});
+	return Router::new()
+		.nest("/hello", routes())
+		.with_state(common::create_state());
 }
 
 #[tokio::test]

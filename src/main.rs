@@ -1,4 +1,5 @@
-use axum::{routing::get, Router};
+use axum::{extract::FromRef, routing::get, Router};
+use memory_store::MemoryStore;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
@@ -9,13 +10,30 @@ use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilte
 pub mod config;
 pub mod errors;
 pub mod handlers;
+pub mod memory_store;
 pub mod middleware;
 pub mod services;
 
-#[derive(Clone)]
 pub struct AppState {
 	pub config: Arc<config::Config>,
-	pub oauth_client: Option<BasicClient>,
+	pub memory_store: Arc<dyn MemoryStore>,
+	pub oauth_client: BasicClient,
+}
+
+impl Clone for AppState {
+	fn clone(&self) -> Self {
+		Self {
+			config: self.config.clone(),
+			oauth_client: self.oauth_client.clone(),
+			memory_store: self.memory_store.clone(),
+		}
+	}
+}
+
+impl FromRef<AppState> for BasicClient {
+	fn from_ref(state: &AppState) -> Self {
+		state.oauth_client.clone()
+	}
 }
 
 #[tokio::main]
@@ -32,6 +50,9 @@ pub async fn main() {
 		.with(tracing_subscriber::fmt::layer())
 		.init();
 
+	// Load MemoryStore
+	let memory_store = Arc::new(memory_store::RedisStore::new(config.redis_url.to_string()).await);
+
 	// Load Oauth client
 	let oauth_client = BasicClient::new(
 		ClientId::new(config.discord.client_id.to_string()),
@@ -44,10 +65,12 @@ pub async fn main() {
 	// add routes and their global state
 	let app_state = AppState {
 		config,
-		oauth_client: Some(oauth_client),
+		memory_store,
+		oauth_client,
 	};
 	let app = Router::new()
 		.route("/health", get(handlers::health))
+		.nest("/auth", services::auth::routes())
 		.nest("/hello", services::hello::routes())
 		.nest("/goodbye", services::goodbye::routes())
 		.with_state(app_state);
