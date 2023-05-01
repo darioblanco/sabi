@@ -1,14 +1,31 @@
-use async_session::{async_trait, Session};
+use async_session::{async_trait, Result, Session};
 use redis::{AsyncCommands, Client};
 use std::sync::Arc;
-use tracing::error;
 
+// TODO - These methods are implemented from async_session::SessionStore, but it causes problems with the Arc if we set the SessionStore trait
 #[async_trait]
 pub trait MemoryStore: Send + Sync {
-	async fn set_user_session(&self, user_id: &str, session: &Session) -> String;
+	/// Get a session from the storage backend.
+	///
+	/// The input is expected to be the value of an identifying
+	/// cookie. This will then be parsed by the session middleware
+	/// into a session if possible
+	async fn load_session(&self, cookie_value: String) -> Result<Option<Session>>;
+
+	/// Store a session on the storage backend.
+	///
+	/// The return value is the value of the cookie to store for the
+	/// user that represents this session
+	async fn store_session(&self, session: Session) -> Result<Option<String>>;
+
+	/// Remove a session from the session store
+	async fn destroy_session(&self, session: Session) -> Result;
+
+	/// Empties the entire store, destroying all sessions
+	async fn clear_store(&self) -> Result;
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RedisStore {
 	redis_client: Arc<Client>,
 }
@@ -31,35 +48,57 @@ impl RedisStore {
 
 #[async_trait]
 impl MemoryStore for RedisStore {
-	// async fn get(&self, key: &str) -> redis::RedisResult<String> {
-	// 	let mut con = self.redis_client.get_async_connection().await?;
-	// 	con.get(key).await
-	// }
-
-	async fn set_user_session(&self, user_id: &str, session: &Session) -> String {
+	async fn load_session(&self, cookie_value: String) -> async_session::Result<Option<Session>> {
+		let key = format!("session:{}", cookie_value); // TODO - parse session id from cookie value
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
-		let key = format!("session:{}", user_id);
-		let value = match serde_json::to_string(session) {
-			Ok(val) => val,
-			Err(e) => {
-				error!("Failed to serialize session: {:?}", e);
-				return String::new();
-			}
-		};
-		let _: () = con.set::<_, _, ()>(&key, &value).await.unwrap(); // Specify the type parameters explicitly
-		value
+		let session_json: Option<String> = con.get(&key).await.unwrap();
+		match session_json {
+			Some(json) => Ok(Some(serde_json::from_str(&json)?)),
+			None => Ok(None),
+		}
 	}
 
-	// pub async fn get_user_session(&self, user_id: &str) -> Option<DiscordUser> {
-	// 	let key = format!("session:{}", user_id);
-	// 	match self.get::<_, Option<String>>(&key).await {
-	// 		Ok(Some(value)) => serde_json::from_str(&value).ok(),
-	// 		_ => None,
-	// 	}
-	// }
+	async fn store_session(&self, session: Session) -> async_session::Result<Option<String>> {
+		let key = format!("session:{}", session.id());
+		let value = serde_json::to_string(&session)?;
+		let mut con = self.redis_client.get_async_connection().await.unwrap();
+		con.set::<_, _, ()>(&key, &value).await.unwrap();
+		Ok(Some(value))
+	}
 
-	// pub async fn remove_user_session(&self, user_id: &str) -> redis::RedisResult<()> {
-	// 	let key = format!("session:{}", user_id);
-	// 	self.del(&key).await
-	// }
+	async fn destroy_session(&self, session: Session) -> async_session::Result {
+		let key = format!("session:{}", session.id());
+		let mut con = self.redis_client.get_async_connection().await.unwrap();
+		con.del::<_, ()>(&key).await.unwrap();
+		Ok(())
+	}
+
+	async fn clear_store(&self) -> async_session::Result {
+		let mut con = self.redis_client.get_async_connection().await.unwrap();
+		let mut cursor: usize = 0;
+		loop {
+			let res: (usize, Vec<String>) = redis::cmd("SCAN")
+				.arg(cursor)
+				.arg("MATCH")
+				.arg("session:*")
+				.query_async(&mut con)
+				.await
+				.unwrap();
+
+			cursor = res.0;
+			let keys: Vec<String> = res.1;
+
+			// Delete the keys
+			if !keys.is_empty() {
+				let _: () = con.del(keys).await.unwrap();
+			}
+
+			// If the cursor is 0, we have completed the iteration
+			if cursor == 0 {
+				break;
+			}
+		}
+
+		Ok(())
+	}
 }

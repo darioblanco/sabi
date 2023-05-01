@@ -1,6 +1,12 @@
-use axum::{extract::FromRef, routing::get, Router};
+use axum::{
+	extract::{FromRef, FromRequestParts},
+	response::IntoResponse,
+	routing::get,
+	Router,
+};
 use memory_store::MemoryStore;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
+use services::auth::User;
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
 use tower_http::trace::{self, TraceLayer};
@@ -69,6 +75,7 @@ pub async fn main() {
 		oauth_client,
 	};
 	let app = Router::new()
+		.route("/", get(index))
 		.route("/health", get(handlers::health))
 		.nest("/auth", services::auth::routes())
 		.nest("/hello", services::hello::routes())
@@ -121,4 +128,15 @@ async fn shutdown_signal() {
 	}
 
 	info!("signal received, starting graceful shutdown");
+}
+
+// Session is optional
+async fn index(user: Option<User>) -> impl IntoResponse {
+	match user {
+		Some(u) => format!(
+			"Hey {}! You're logged in!\nYou may now access `/protected`.\nLog out with `/logout`.",
+			u.discord.username
+		),
+		None => "You're not logged in.\nVisit `/auth/discord` to do so.".to_string(),
+	}
 }

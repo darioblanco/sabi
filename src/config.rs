@@ -56,7 +56,7 @@ impl Config {
 			.expect("Missing Discord client secret!");
 		let discord_redirect_url = env
 			.get_var("DISCORD_REDIRECT_URL")
-			.unwrap_or_else(|_| "http://127.0.0.1:3000/auth/authorized".to_string());
+			.unwrap_or_else(|_| "http://127.0.0.1:3030/auth/discord/authorized".to_string());
 		let discord_token_url = env
 			.get_var("DISCORD_TOKEN_URL")
 			.unwrap_or_else(|_| "https://discord.com/api/oauth2/token".to_string());
@@ -160,7 +160,7 @@ mod tests {
 		);
 		assert_eq!(
 			config.discord.redirect_url.to_string(),
-			"http://127.0.0.1:3000/auth/authorized".to_string()
+			"http://127.0.0.1:3030/auth/discord/authorized".to_string()
 		);
 		assert_eq!(
 			config.discord.token_url.to_string(),

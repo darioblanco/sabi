@@ -1,29 +1,37 @@
-use std::{collections::HashMap, sync::Arc};
+use std::sync::Arc;
 
 use async_session::Session;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use sabi::{config::Config, memory_store::MemoryStore, AppState};
-use tokio::sync::RwLock;
 
 #[derive(Clone)]
-pub struct MockRedisStore {
-	data: Arc<RwLock<HashMap<String, String>>>,
-}
+pub struct MockRedisStore {}
 
 impl MockRedisStore {
 	pub fn new() -> Self {
-		Self {
-			data: Arc::new(RwLock::new(HashMap::new())),
-		}
+		Self {}
 	}
 }
 
 #[async_trait::async_trait]
 impl MemoryStore for MockRedisStore {
-	async fn set_user_session(&self, user_id: &str, session: &Session) -> String {
-		let mut data = self.data.write().await;
-		data.insert(user_id.to_string(), serde_json::to_string(session).unwrap());
-		return "test".to_string();
+	async fn load_session(&self, cookie_value: String) -> async_session::Result<Option<Session>> {
+		let mut session = Session::new();
+		session.insert("user", cookie_value).unwrap();
+		return Ok(Some(session));
+	}
+
+	async fn store_session(&self, _: Session) -> async_session::Result<Option<String>> {
+		let value = "test".to_string();
+		Ok(Some(value))
+	}
+
+	async fn destroy_session(&self, _: Session) -> async_session::Result {
+		Ok(())
+	}
+
+	async fn clear_store(&self) -> async_session::Result {
+		Ok(())
 	}
 }
 

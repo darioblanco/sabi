@@ -49,3 +49,7 @@ container-run:
 # Stop and remove the Docker container
 container-down:
 	docker-compose down
+
+# Attach to the redis container
+container-redis:
+	docker-compose exec redis redis-cli

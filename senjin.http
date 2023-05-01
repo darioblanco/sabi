@@ -1,19 +1,25 @@
 
 @baseUrl = http://localhost:3030
 
-###
+### GET /auth/discord
+
+GET {{baseUrl}}/auth/discord HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+### GET /auth/authorized
+
+GET {{baseUrl}}/auth/discord/authorized?code=token&state=test HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+### GET /doesnotexist
 
 GET {{baseUrl}}/doesnotexist HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
-###
-
-GET {{baseUrl}}/hello HTTP/1.1
-Accept: application/json
-Content-Type: application/json
-
-###
+### GET /health
 
 GET {{baseUrl}}/health HTTP/1.1
 Accept: application/json
@@ -23,7 +29,13 @@ Content-Type: application/json
   "status": "OK"
 }
 
-###
+### GET /hello
+
+GET {{baseUrl}}/hello HTTP/1.1
+Accept: application/json
+Content-Type: application/json
+
+### POST /hello
 
 POST {{baseUrl}}/hello HTTP/1.1
 Accept: application/json
@@ -34,13 +46,13 @@ Content-Type: application/json
 }
 
 
-###
+### POST /goodbye
 
 POST {{baseUrl}}/goodbye HTTP/1.1
 Accept: application/json
 Content-Type: application/json
 
-###
+### POST /goodbye/reason
 
 POST {{baseUrl}}/goodbye/reason HTTP/1.1
 Accept: application/json

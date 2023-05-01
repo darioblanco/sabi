@@ -1,6 +1,6 @@
 use crate::AppState;
 
-use super::{auth_dto::DiscordUser, DiscordAuthRequest};
+use super::{auth_dto::DiscordUser, DiscordAuthRequest, User, COOKIE_NAME};
 use async_session::Session;
 use axum::{
 	extract::{Query, State},
@@ -11,13 +11,11 @@ use axum::{
 };
 use oauth2::{reqwest::async_http_client, AuthorizationCode, CsrfToken, Scope, TokenResponse};
 
-static COOKIE_NAME: &str = "SESSION";
-
 pub fn routes() -> Router<AppState> {
 	// /auth
 	Router::new()
 		.route("/discord", get(discord))
-		.route("/authorized", get(login_authorized))
+		.route("/discord/authorized", get(login_authorized))
 }
 
 async fn discord(State(app_state): State<AppState>) -> impl IntoResponse {
@@ -57,14 +55,16 @@ async fn login_authorized(
 		.await
 		.unwrap();
 
+	let user = User {
+		discord: discord_user,
+	};
+
 	// Create a new session filled with user data
 	let mut session = Session::new();
-	session.insert("user", &discord_user).unwrap();
+	session.insert("user", &user).unwrap();
 
 	// Store session and get corresponding cookie
-	let cookie = memory_store
-		.set_user_session(&discord_user.id, &session)
-		.await;
+	let cookie = memory_store.store_session(session).await.unwrap().unwrap();
 
 	// Build the cookie
 	let cookie = format!("{}={}; SameSite=Lax; Path=/", COOKIE_NAME, cookie);
