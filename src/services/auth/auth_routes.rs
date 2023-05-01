@@ -10,6 +10,7 @@ use axum::{
 	Router, TypedHeader,
 };
 use oauth2::{reqwest::async_http_client, AuthorizationCode, CsrfToken, Scope, TokenResponse};
+use tracing::debug;
 
 pub fn routes() -> Router<AppState> {
 	// /auth
@@ -28,6 +29,7 @@ async fn discord(State(app_state): State<AppState>) -> impl IntoResponse {
 		.url();
 
 	// Redirect to Discord's oauth service
+	debug!("Redirecting to Discord's oauth service: {}", auth_url);
 	Redirect::to(auth_url.as_ref())
 }
 
@@ -38,7 +40,8 @@ async fn login_authorized(
 ) -> impl IntoResponse {
 	let memory_store = app_state.memory_store;
 	let oauth_client = app_state.oauth_client;
-	// Get an auth token
+
+	debug!("Get auth token from oauth client with the given exchange code");
 	let token = oauth_client
 		.exchange_code(AuthorizationCode::new(query.code.clone()))
 		.request_async(async_http_client)
@@ -46,6 +49,7 @@ async fn login_authorized(
 		.unwrap();
 
 	// Fetch user data from discord
+	debug!("Fetch user data from discord");
 	let client = reqwest::Client::new();
 	let discord_user: DiscordUser = client
 		// https://discord.com/developers/docs/resources/user#get-current-user
@@ -57,25 +61,21 @@ async fn login_authorized(
 		.json::<DiscordUser>()
 		.await
 		.unwrap();
-
 	let user = User {
 		discord: discord_user,
 	};
 
-	// Create a new session filled with user data
+	debug!("Create a new session filled with user data");
 	let mut session = Session::new();
 	session.insert("user", &user).unwrap();
 
-	// Store session and get corresponding cookie
+	debug!("Store session and get corresponding cookie");
 	let cookie = memory_store.store_session(session).await.unwrap().unwrap();
 
-	// Build the cookie
+	debug!("Set the cookie and redirect");
 	let cookie = format!("{}={}; SameSite=Lax; Path=/", COOKIE_NAME, cookie);
-
-	// Set cookie
 	let mut headers = HeaderMap::new();
 	headers.insert(SET_COOKIE, cookie.parse().unwrap());
-
 	(headers, Redirect::to("/"))
 }
 

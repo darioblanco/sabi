@@ -46,8 +46,17 @@ pub async fn main() {
 	debug!("Loaded environment variables {:?}", config);
 
 	// Set up logging
+	let filter = EnvFilter::try_new(format!(
+		"sabi={},hyper={}",
+		config.log_level.to_string(), // Only log the configured level or above
+		match config.log_level {
+			Level::TRACE => "trace", // Only activate hyper logging when trace is given
+			_ => "off",
+		}
+	))
+	.unwrap();
 	tracing_subscriber::registry()
-		.with(EnvFilter::try_new(config.log_level.to_string()).unwrap()) // Only log the configured level or above
+		.with(filter)
 		.with(tracing_subscriber::fmt::layer())
 		.init();
 
