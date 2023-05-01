@@ -14,7 +14,9 @@ pub static COOKIE_NAME: &str = "SESSION";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-	pub discord: DiscordUser,
+	pub username: String,
+	pub discord: Option<DiscordUser>,
+	pub google: Option<GoogleUser>,
 }
 
 // The user data we'll get back from Discord.
@@ -27,9 +29,15 @@ pub struct DiscordUser {
 	pub discriminator: String,
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GoogleUser {
+	pub email: String,
+	pub name: String,
+}
+
 #[derive(Debug, Deserialize)]
 #[allow(dead_code)]
-pub struct DiscordAuthRequest {
+pub struct OAuthRequest {
 	pub code: String,
 	pub state: String,
 }
