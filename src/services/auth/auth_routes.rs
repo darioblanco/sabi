@@ -30,9 +30,11 @@ async fn discord_login(State(app_state): State<AppState>) -> impl IntoResponse {
 	let (auth_url, _csrf_token) = oauth_client
 		.authorize_url(CsrfToken::new_random)
 		.add_scope(Scope::new("identify".to_string()))
+		.add_scope(Scope::new("email".to_string()))
 		.url();
 
 	// Redirect to Discord's oauth service
+	debug!("Redirecting to Discord's oauth service: {}", auth_url);
 	Redirect::to(auth_url.as_ref())
 }
 
@@ -67,14 +69,18 @@ async fn discord_authorized(
 		.await
 		.unwrap();
 	let user = User {
-		username: discord_user.username.clone(),
+		email: discord_user.email.clone(),
 		discord: Some(discord_user),
 		google: None,
 	};
 
-	debug!("Create a new session filled with user data");
+	debug!(
+		"Create a new session for user {} and data {:?}",
+		user.email, user
+	);
 	let mut session = Session::new();
-	session.insert("user", &user).unwrap();
+	session.insert_raw("email", user.email);
+	session.insert("discord", &user.discord).unwrap();
 
 	debug!("Store session and get corresponding cookie");
 	let cookie = memory_store.store_session(session).await.unwrap().unwrap();
@@ -148,14 +154,15 @@ async fn google_authorized(
 		.unwrap();
 
 	let user = User {
-		username: user_info.email.clone(),
+		email: user_info.email.clone(),
 		discord: None,
 		google: Some(user_info),
 	};
 
-	debug!("Create a new session filled with user data");
+	debug!("Create a new session filled with user {:?}", user);
 	let mut session = Session::new();
-	session.insert("user", &user).unwrap();
+	session.insert_raw("email", user.email);
+	session.insert("google", &user.google).unwrap();
 
 	debug!("Store session and get corresponding cookie");
 	let cookie = memory_store.store_session(session).await.unwrap().unwrap();

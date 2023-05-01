@@ -14,7 +14,7 @@ pub static COOKIE_NAME: &str = "SESSION";
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
-	pub username: String,
+	pub email: String,
 	pub discord: Option<DiscordUser>,
 	pub google: Option<GoogleUser>,
 }
@@ -27,6 +27,7 @@ pub struct DiscordUser {
 	pub avatar: Option<String>,
 	pub username: String,
 	pub discriminator: String,
+	pub email: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -84,7 +85,7 @@ where
 			.ok_or(DiscordAuthRedirect)?;
 
 		debug!("Loaded session {:?}", session);
-		let user = session.get::<User>("user").ok_or(DiscordAuthRedirect)?;
+		let user = session.get::<User>("email").ok_or(DiscordAuthRedirect)?;
 
 		Ok(user)
 	}

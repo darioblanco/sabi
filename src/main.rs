@@ -1,5 +1,6 @@
 use axum::{response::IntoResponse, routing::get, Router};
 use memory_store::MemoryStore;
+use ngrok::prelude::*;
 use services::auth::{MultiOAuthConfig, MultiOAuthProvider, OAuthConfig, User};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
@@ -32,18 +33,17 @@ impl Clone for AppState {
 
 #[tokio::main]
 #[cfg(not(tarpaulin_include))]
-pub async fn main() {
-	// Load environment variables into the config
+pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
+	// Load configuration variables
 	let config = Arc::new(config::Config::from_env(&config::SystemEnvironment));
 	let api_address: SocketAddr = config.api_address;
-	debug!("Loaded environment variables {:?}", config);
 
-	// Set up logging
+	debug!("Setting up logging...");
 	let filter = EnvFilter::try_new(format!(
-		"sabi={},hyper={}",
+		"sabi={0},axum={0},tower={0},hyper={0},hyper::proto::h1::io={1},hyper::proto::h1::conn={1}",
 		config.log_level.to_string(), // Only log the configured level or above
 		match config.log_level {
-			Level::TRACE => "trace", // Only activate hyper logging when trace is given
+			Level::TRACE => "trace", // Only activate hyper spammy logging when trace is given
 			_ => "off",
 		}
 	))
@@ -53,10 +53,10 @@ pub async fn main() {
 		.with(tracing_subscriber::fmt::layer())
 		.init();
 
-	// Load MemoryStore
+	debug!("Loading Memory Store...");
 	let memory_store = Arc::new(memory_store::RedisStore::new(config.redis_url.to_string()).await);
 
-	// Load Oauth providers
+	debug!("Loading OAuth providers...");
 	let oauth_providers = Arc::new(MultiOAuthProvider::new(MultiOAuthConfig {
 		discord: OAuthConfig {
 			client_id: config.discord.client_id.to_string(),
@@ -70,7 +70,7 @@ pub async fn main() {
 		},
 	}));
 
-	// add routes and their global state
+	debug!("Loading routes and global state...");
 	let app_state = AppState {
 		config,
 		memory_store,
@@ -85,7 +85,7 @@ pub async fn main() {
 		.nest("/goodbye", services::goodbye::routes())
 		.with_state(app_state);
 
-	// add middlewares
+	debug!("Loading middlewares...");
 	let app = app
 		.layer(
 			TraceLayer::new_for_http()
@@ -94,16 +94,37 @@ pub async fn main() {
 		)
 		.layer(middleware::cors(api_address));
 
-	// add a fallback service for handling routes to unknown paths
+	debug!("Adding fallback service for handling routes for unknown paths...");
 	let app = app.fallback(handlers::not_found);
 
-	let addr = SocketAddr::from(api_address);
-	info!("Starting server on {}", api_address);
-	hyper::Server::bind(&addr)
-		.serve(app.into_make_service())
-		.with_graceful_shutdown(shutdown_signal())
-		.await
-		.unwrap();
+	if std::env::var("NGROK_AUTHTOKEN").is_ok() {
+		debug!("Running server with ngrok...");
+		// Listen on ngrok's global network (i.e. https://myapp.ngrok.dev)
+		let listener = ngrok::Session::builder()
+			.authtoken_from_env()
+			.connect()
+			.await?
+			.http_endpoint()
+			.listen()
+			.await?;
+		info!("Starting server with ngrok on {}...", listener.url());
+		axum::Server::builder(listener)
+			.serve(app.into_make_service())
+			.with_graceful_shutdown(shutdown_signal())
+			.await
+			.unwrap();
+	} else {
+		// If NGROK_AUTHTOKEN is not provided, start normally with the address given in the config
+		debug!("Running server without ngrok...");
+		let addr = SocketAddr::from(api_address);
+		info!("Starting server on {}...", api_address);
+		hyper::Server::bind(&addr)
+			.serve(app.into_make_service())
+			.with_graceful_shutdown(shutdown_signal())
+			.await
+			.unwrap();
+	}
+	Ok(())
 }
 
 #[cfg(not(tarpaulin_include))]
@@ -137,10 +158,12 @@ async fn shutdown_signal() {
 async fn index(user: Option<User>) -> impl IntoResponse {
 	match user {
 		Some(u) => format!(
-			"Hey {}! You're logged in!\nYou may now access `/protected`.\nLog out with `/logout`.",
-			u.username
+			"Hey {}! You're logged in!\nYou may now access `/protected`.\nLog out with `/auth/logout`.",
+			u.email
 		),
-		None => "You're not logged in.\nVisit `/auth/discord` to do so.".to_string(),
+		None => {
+			"You're not logged in.\nVisit `/auth/discord` or `/auth/google` to do so.".to_string()
+		}
 	}
 }
 

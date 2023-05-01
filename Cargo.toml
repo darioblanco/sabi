@@ -14,6 +14,7 @@ env_logger = "0.10.0"
 headers = "0.3"
 http = "0.2"
 hyper = { version = "0.14", features = ["full"] }
+ngrok = { version = "0.11", features = ["axum"] }
 oauth2 = "4.3"
 redis = { version = "0.23", features = ["aio", "tokio-comp"] }
 reqwest = { version = "0.11", default-features = false, features = ["rustls-tls", "json"] }
