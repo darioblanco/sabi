@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
 use async_session::Session;
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-use sabi::{config::Config, memory_store::MemoryStore, AppState};
+use sabi::{
+	config::Config,
+	memory_store::MemoryStore,
+	services::auth::{MultiOAuthConfig, MultiOAuthProvider, OAuthConfig},
+	AppState,
+};
 
 #[derive(Clone)]
 pub struct MockRedisStore {}
@@ -38,16 +42,21 @@ impl MemoryStore for MockRedisStore {
 pub fn create_state() -> AppState {
 	let config = Arc::new(Config::from_params("test".to_string()));
 	let memory_store: Arc<dyn MemoryStore> = Arc::new(MockRedisStore::new());
-	let oauth_client = BasicClient::new(
-		ClientId::new("secret".to_string()),
-		Some(ClientSecret::new("secret".to_string())),
-		AuthUrl::new("https://localhost".to_string()).unwrap(),
-		Some(TokenUrl::new("https://localhost".to_string()).unwrap()),
-	)
-	.set_redirect_uri(RedirectUrl::new("https://localhost".to_string()).unwrap());
+	let oauth_providers = Arc::new(MultiOAuthProvider::new(MultiOAuthConfig {
+		discord: OAuthConfig {
+			client_id: "secret".to_string(),
+			client_secret: "secret".to_string(),
+			redirect_url: "https://localhost".to_string(),
+		},
+		google: OAuthConfig {
+			client_id: "secret".to_string(),
+			client_secret: "secret".to_string(),
+			redirect_url: "https://localhost".to_string(),
+		},
+	}));
 	return AppState {
 		config,
 		memory_store,
-		oauth_client,
+		oauth_providers,
 	};
 }

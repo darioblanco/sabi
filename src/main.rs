@@ -1,7 +1,6 @@
-use axum::{extract::FromRef, response::IntoResponse, routing::get, Router};
+use axum::{response::IntoResponse, routing::get, Router};
 use memory_store::MemoryStore;
-use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
-use services::auth::User;
+use services::auth::{MultiOAuthConfig, MultiOAuthProvider, OAuthConfig, User};
 use std::{net::SocketAddr, sync::Arc};
 use tokio::signal;
 use tower_http::trace::{self, TraceLayer};
@@ -18,22 +17,16 @@ pub mod services;
 pub struct AppState {
 	pub config: Arc<config::Config>,
 	pub memory_store: Arc<dyn MemoryStore>,
-	pub oauth_client: BasicClient,
+	pub oauth_providers: Arc<MultiOAuthProvider>,
 }
 
 impl Clone for AppState {
 	fn clone(&self) -> Self {
 		Self {
 			config: self.config.clone(),
-			oauth_client: self.oauth_client.clone(),
+			oauth_providers: self.oauth_providers.clone(),
 			memory_store: self.memory_store.clone(),
 		}
-	}
-}
-
-impl FromRef<AppState> for BasicClient {
-	fn from_ref(state: &AppState) -> Self {
-		state.oauth_client.clone()
 	}
 }
 
@@ -63,20 +56,25 @@ pub async fn main() {
 	// Load MemoryStore
 	let memory_store = Arc::new(memory_store::RedisStore::new(config.redis_url.to_string()).await);
 
-	// Load Oauth client
-	let oauth_client = BasicClient::new(
-		ClientId::new(config.discord.client_id.to_string()),
-		Some(ClientSecret::new(config.discord.client_secret.to_string())),
-		AuthUrl::new(config.discord.auth_url.to_string()).unwrap(),
-		Some(TokenUrl::new(config.discord.token_url.to_string()).unwrap()),
-	)
-	.set_redirect_uri(RedirectUrl::new(config.discord.redirect_url.to_string()).unwrap());
+	// Load Oauth providers
+	let oauth_providers = Arc::new(MultiOAuthProvider::new(MultiOAuthConfig {
+		discord: OAuthConfig {
+			client_id: config.discord.client_id.to_string(),
+			client_secret: config.discord.client_secret.to_string(),
+			redirect_url: config.discord.redirect_url.to_string(),
+		},
+		google: OAuthConfig {
+			client_id: "secret".to_string(),
+			client_secret: "secret".to_string(),
+			redirect_url: "https://localhost".to_string(),
+		},
+	}));
 
 	// add routes and their global state
 	let app_state = AppState {
 		config,
 		memory_store,
-		oauth_client,
+		oauth_providers,
 	};
 	let app = Router::new()
 		.route("/", get(index))

@@ -22,8 +22,10 @@ pub fn routes() -> Router<AppState> {
 
 // To be called when requesting a login to Discord
 async fn discord(State(app_state): State<AppState>) -> impl IntoResponse {
-	let (auth_url, _csrf_token) = app_state
-		.oauth_client
+	let discord_oauth_client = app_state
+		.oauth_providers
+		.client(crate::services::auth::ProviderType::Discord);
+	let (auth_url, _csrf_token) = discord_oauth_client
 		.authorize_url(CsrfToken::new_random)
 		.add_scope(Scope::new("identify".to_string()))
 		.url();
@@ -39,10 +41,12 @@ async fn login_authorized(
 	State(app_state): State<AppState>,
 ) -> impl IntoResponse {
 	let memory_store = app_state.memory_store;
-	let oauth_client = app_state.oauth_client;
+	let discord_oauth_client = app_state
+		.oauth_providers
+		.client(crate::services::auth::ProviderType::Discord);
 
 	debug!("Get auth token from oauth client with the given exchange code");
-	let token = oauth_client
+	let token = discord_oauth_client
 		.exchange_code(AuthorizationCode::new(query.code.clone()))
 		.request_async(async_http_client)
 		.await
