@@ -52,4 +52,5 @@ container-down:
 
 # Attach to the redis container
 container-redis:
-	docker-compose exec redis redis-cli
+	docker-compose up -d redis
+	docker-compose exec redis sh

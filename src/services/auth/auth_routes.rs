@@ -7,7 +7,7 @@ use axum::{
 	http::{header::SET_COOKIE, HeaderMap},
 	response::{IntoResponse, Redirect},
 	routing::get,
-	Router,
+	Router, TypedHeader,
 };
 use oauth2::{reqwest::async_http_client, AuthorizationCode, CsrfToken, Scope, TokenResponse};
 
@@ -16,8 +16,10 @@ pub fn routes() -> Router<AppState> {
 	Router::new()
 		.route("/discord", get(discord))
 		.route("/discord/authorized", get(login_authorized))
+		.route("/logout", get(logout))
 }
 
+// To be called when requesting a login to Discord
 async fn discord(State(app_state): State<AppState>) -> impl IntoResponse {
 	let (auth_url, _csrf_token) = app_state
 		.oauth_client
@@ -29,6 +31,7 @@ async fn discord(State(app_state): State<AppState>) -> impl IntoResponse {
 	Redirect::to(auth_url.as_ref())
 }
 
+// To be called as a callback when the user has successfully logged externally into Discord
 async fn login_authorized(
 	Query(query): Query<DiscordAuthRequest>,
 	State(app_state): State<AppState>,
@@ -74,4 +77,25 @@ async fn login_authorized(
 	headers.insert(SET_COOKIE, cookie.parse().unwrap());
 
 	(headers, Redirect::to("/"))
+}
+
+async fn logout(
+	State(app_state): State<AppState>,
+	TypedHeader(cookies): TypedHeader<headers::Cookie>,
+) -> impl IntoResponse {
+	let memory_store = app_state.memory_store;
+	let cookie = match cookies.get(COOKIE_NAME) {
+		Some(cookie) => cookie,
+		// No cookie set, just redirect
+		None => return Redirect::to("/"),
+	};
+	let session = match memory_store.load_session(cookie.to_string()).await.unwrap() {
+		Some(s) => s,
+		// No session active, just redirect
+		None => return Redirect::to("/"),
+	};
+
+	// Session was active, destroy it and redirect
+	memory_store.destroy_session(session).await.unwrap();
+	Redirect::to("/")
 }

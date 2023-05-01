@@ -1,6 +1,8 @@
 use async_session::{async_trait, Result, Session};
 use redis::{AsyncCommands, Client};
+use serde_json::Value;
 use std::sync::Arc;
+use tracing::debug;
 
 // TODO - These methods are implemented from async_session::SessionStore, but it causes problems with the Arc if we set the SessionStore trait
 #[async_trait]
@@ -49,7 +51,10 @@ impl RedisStore {
 #[async_trait]
 impl MemoryStore for RedisStore {
 	async fn load_session(&self, cookie_value: String) -> async_session::Result<Option<Session>> {
-		let key = format!("session:{}", cookie_value); // TODO - parse session id from cookie value
+		debug!("Load session from cookie value {}", cookie_value);
+		let json_value: Value = serde_json::from_str(&cookie_value).unwrap();
+		let id = json_value["id"].as_str().unwrap().to_string();
+		let key = format!("session:{}", id);
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
 		let session_json: Option<String> = con.get(&key).await.unwrap();
 		match session_json {
@@ -59,6 +64,7 @@ impl MemoryStore for RedisStore {
 	}
 
 	async fn store_session(&self, session: Session) -> async_session::Result<Option<String>> {
+		debug!("Store session {:?}", session);
 		let key = format!("session:{}", session.id());
 		let value = serde_json::to_string(&session)?;
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
@@ -67,6 +73,7 @@ impl MemoryStore for RedisStore {
 	}
 
 	async fn destroy_session(&self, session: Session) -> async_session::Result {
+		debug!("Destroy session {:?}", session);
 		let key = format!("session:{}", session.id());
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
 		con.del::<_, ()>(&key).await.unwrap();
@@ -74,6 +81,7 @@ impl MemoryStore for RedisStore {
 	}
 
 	async fn clear_store(&self) -> async_session::Result {
+		debug!("Clear all sessions");
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
 		let mut cursor: usize = 0;
 		loop {

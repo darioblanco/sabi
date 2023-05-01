@@ -6,6 +6,7 @@ use axum::{
 };
 use http::{header, request::Parts};
 use serde_derive::{Deserialize, Serialize};
+use tracing::debug;
 
 use crate::AppState;
 
@@ -51,6 +52,7 @@ where
 	type Rejection = DiscordAuthRedirect;
 
 	async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+		debug!("Analyzing request in User middleware {:?}", parts);
 		let memory_store = <AppState>::from_ref(state).memory_store;
 
 		let cookies = parts
@@ -63,14 +65,17 @@ where
 				},
 				_ => panic!("unexpected error getting cookies: {}", e),
 			})?;
+		debug!("Loaded cookies {:?}", cookies);
 		let session_cookie = cookies.get(COOKIE_NAME).ok_or(DiscordAuthRedirect)?;
 
+		debug!("Loaded session cookie {:?}", session_cookie);
 		let session = memory_store
 			.load_session(session_cookie.to_string())
 			.await
 			.unwrap()
 			.ok_or(DiscordAuthRedirect)?;
 
+		debug!("Loaded session {:?}", session);
 		let user = session.get::<User>("user").ok_or(DiscordAuthRedirect)?;
 
 		Ok(user)

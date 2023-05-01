@@ -1,9 +1,4 @@
-use axum::{
-	extract::{FromRef, FromRequestParts},
-	response::IntoResponse,
-	routing::get,
-	Router,
-};
+use axum::{extract::FromRef, response::IntoResponse, routing::get, Router};
 use memory_store::MemoryStore;
 use oauth2::{basic::BasicClient, AuthUrl, ClientId, ClientSecret, RedirectUrl, TokenUrl};
 use services::auth::User;
@@ -77,6 +72,7 @@ pub async fn main() {
 	let app = Router::new()
 		.route("/", get(index))
 		.route("/health", get(handlers::health))
+		.route("/protected", get(protected))
 		.nest("/auth", services::auth::routes())
 		.nest("/hello", services::hello::routes())
 		.nest("/goodbye", services::goodbye::routes())
@@ -139,4 +135,12 @@ async fn index(user: Option<User>) -> impl IntoResponse {
 		),
 		None => "You're not logged in.\nVisit `/auth/discord` to do so.".to_string(),
 	}
+}
+
+// Valid user session required. If there is none, redirect to the auth page
+async fn protected(user: User) -> impl IntoResponse {
+	format!(
+		"Welcome to the protected area :)\nHere's your info:\n{:?}",
+		user
+	)
 }
