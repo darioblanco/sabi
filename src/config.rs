@@ -19,6 +19,7 @@ impl Environment for SystemEnvironment {
 pub struct Config {
 	pub api_address: SocketAddr,
 	pub discord: DiscordConfig,
+	pub google: GoogleConfig,
 	pub log_level: Level,
 	pub redis_url: Arc<String>,
 	pub version: Arc<String>,
@@ -26,6 +27,13 @@ pub struct Config {
 
 #[derive(Clone, Debug)]
 pub struct DiscordConfig {
+	pub client_id: Arc<String>,
+	pub client_secret: Arc<String>,
+	pub redirect_url: Arc<String>,
+}
+
+#[derive(Clone, Debug)]
+pub struct GoogleConfig {
 	pub client_id: Arc<String>,
 	pub client_secret: Arc<String>,
 	pub redirect_url: Arc<String>,
@@ -51,6 +59,15 @@ impl Config {
 			.expect("Missing Discord client secret!");
 		let discord_redirect_url = env
 			.get_var("DISCORD_REDIRECT_URL")
+			.unwrap_or_else(|_| "http://127.0.0.1:3030/auth/discord/authorized".to_string());
+		let google_client_id = env
+			.get_var("GOOGLE_CLIENT_ID")
+			.expect("Missing Google client id!");
+		let google_client_secret = env
+			.get_var("GOOGLE_CLIENT_SECRET")
+			.expect("Missing Google client secret!");
+		let google_redirect_url = env
+			.get_var("GOOGLE_REDIRECT_URL")
 			.unwrap_or_else(|_| "http://127.0.0.1:3030/auth/discord/authorized".to_string());
 		let log_level = env
 			.get_var("LOG_LEVEL")
@@ -83,6 +100,11 @@ impl Config {
 				client_secret: Arc::new(discord_client_secret),
 				redirect_url: Arc::new(discord_redirect_url),
 			},
+			google: GoogleConfig {
+				client_id: Arc::new(google_client_id),
+				client_secret: Arc::new(google_client_secret),
+				redirect_url: Arc::new(google_redirect_url),
+			},
 			log_level,
 			redis_url: Arc::new(redis_url),
 			version,
@@ -101,6 +123,11 @@ impl Config {
 		Config {
 			api_address,
 			discord: DiscordConfig {
+				client_id: Arc::new("test".to_string()),
+				client_secret: Arc::new("test".to_string()),
+				redirect_url: Arc::new("test".to_string()),
+			},
+			google: GoogleConfig {
 				client_id: Arc::new("test".to_string()),
 				client_secret: Arc::new("test".to_string()),
 				redirect_url: Arc::new("test".to_string()),
@@ -134,6 +161,8 @@ mod tests {
 		let mut vars = std::collections::HashMap::new();
 		vars.insert("DISCORD_CLIENT_ID".to_string(), "secret".to_string());
 		vars.insert("DISCORD_CLIENT_SECRET".to_string(), "secret".to_string());
+		vars.insert("GOOGLE_CLIENT_ID".to_string(), "secret".to_string());
+		vars.insert("GOOGLE_CLIENT_SECRET".to_string(), "secret".to_string());
 		let env = MockEnvironment { vars };
 		let config = Config::from_env(&env);
 		assert_eq!(config.api_address, "127.0.0.1:3030".parse().unwrap());
@@ -144,6 +173,15 @@ mod tests {
 		);
 		assert_eq!(
 			config.discord.redirect_url.to_string(),
+			"http://127.0.0.1:3030/auth/discord/authorized".to_string()
+		);
+		assert_eq!(config.google.client_id.to_string(), "secret".to_string());
+		assert_eq!(
+			config.google.client_secret.to_string(),
+			"secret".to_string()
+		);
+		assert_eq!(
+			config.google.redirect_url.to_string(),
 			"http://127.0.0.1:3030/auth/discord/authorized".to_string()
 		);
 		assert_eq!(
@@ -165,6 +203,12 @@ mod tests {
 			"DISCORD_REDIRECT_URL".to_string(),
 			"https://redirecturl".to_string(),
 		);
+		vars.insert("GOOGLE_CLIENT_ID".to_string(), "secret".to_string());
+		vars.insert("GOOGLE_CLIENT_SECRET".to_string(), "secret".to_string());
+		vars.insert(
+			"GOOGLE_REDIRECT_URL".to_string(),
+			"https://redirecturl".to_string(),
+		);
 		vars.insert("REDIS_URL".to_string(), "myredis://127.0.0.1/".to_string());
 		vars.insert("LOG_LEVEL".to_string(), "warn".to_string());
 		let env = MockEnvironment { vars };
@@ -177,6 +221,15 @@ mod tests {
 		);
 		assert_eq!(
 			config.discord.redirect_url.to_string(),
+			"https://redirecturl".to_string()
+		);
+		assert_eq!(config.google.client_id.to_string(), "secret".to_string());
+		assert_eq!(
+			config.google.client_secret.to_string(),
+			"secret".to_string()
+		);
+		assert_eq!(
+			config.google.redirect_url.to_string(),
 			"https://redirecturl".to_string()
 		);
 		assert_eq!(
