@@ -79,8 +79,7 @@ async fn discord_authorized(
 		user.email, user
 	);
 	let mut session = Session::new();
-	session.insert_raw("email", user.email);
-	session.insert("discord", &user.discord).unwrap();
+	session.insert("user", &user).unwrap();
 
 	debug!("Store session and get corresponding cookie");
 	let cookie = memory_store.store_session(session).await.unwrap().unwrap();
@@ -161,8 +160,7 @@ async fn google_authorized(
 
 	debug!("Create a new session filled with user {:?}", user);
 	let mut session = Session::new();
-	session.insert_raw("email", user.email);
-	session.insert("google", &user.google).unwrap();
+	session.insert("user", &user).unwrap();
 
 	debug!("Store session and get corresponding cookie");
 	let cookie = memory_store.store_session(session).await.unwrap().unwrap();

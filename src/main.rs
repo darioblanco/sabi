@@ -64,9 +64,9 @@ pub async fn main() -> Result<(), Box<dyn std::error::Error>> {
 			redirect_url: config.discord.redirect_url.to_string(),
 		},
 		google: OAuthConfig {
-			client_id: "secret".to_string(),
-			client_secret: "secret".to_string(),
-			redirect_url: "https://localhost".to_string(),
+			client_id: config.google.client_id.to_string(),
+			client_secret: config.google.client_secret.to_string(),
+			redirect_url: config.google.redirect_url.to_string(),
 		},
 	}));
 
@@ -158,8 +158,8 @@ async fn shutdown_signal() {
 async fn index(user: Option<User>) -> impl IntoResponse {
 	match user {
 		Some(u) => format!(
-			"Hey {}! You're logged in!\nYou may now access `/protected`.\nLog out with `/auth/logout`.",
-			u.email
+			"Hey {}! You're logged in!\nYou may now access `/protected`.\nLog out with `/auth/logout`.\nYour {:?}",
+			u.email, u
 		),
 		None => {
 			"You're not logged in.\nVisit `/auth/discord` or `/auth/google` to do so.".to_string()

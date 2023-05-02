@@ -15,7 +15,9 @@ pub static COOKIE_NAME: &str = "SESSION";
 #[derive(Debug, Serialize, Deserialize)]
 pub struct User {
 	pub email: String,
+	#[serde(default)] // Allows null values in the attribute when the discord object is not there
 	pub discord: Option<DiscordUser>,
+	#[serde(default)] // Allows null values in the attribute when the google object is not there
 	pub google: Option<GoogleUser>,
 }
 
@@ -24,6 +26,7 @@ pub struct User {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct DiscordUser {
 	pub id: String,
+	#[serde(default)]
 	pub avatar: Option<String>,
 	pub username: String,
 	pub discriminator: String,
@@ -85,7 +88,7 @@ where
 			.ok_or(DiscordAuthRedirect)?;
 
 		debug!("Loaded session {:?}", session);
-		let user = session.get::<User>("email").ok_or(DiscordAuthRedirect)?;
+		let user = session.get::<User>("user").ok_or(DiscordAuthRedirect)?;
 
 		Ok(user)
 	}

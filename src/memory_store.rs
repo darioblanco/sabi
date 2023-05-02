@@ -4,6 +4,8 @@ use serde_json::Value;
 use std::sync::Arc;
 use tracing::debug;
 
+use crate::services::auth::User;
+
 // TODO - These methods are implemented from async_session::SessionStore, but it causes problems with the Arc if we set the SessionStore trait
 #[async_trait]
 pub trait MemoryStore: Send + Sync {
@@ -54,12 +56,11 @@ impl MemoryStore for RedisStore {
 		debug!("Load session from cookie value {}", cookie_value);
 		let json_value: Value = serde_json::from_str(&cookie_value).unwrap();
 		let session_id = json_value["id"].as_str().unwrap().to_string();
-		let email = json_value["data"]["email"].as_str().unwrap().to_string();
-		let key = format!("session:{}:{}", email, session_id);
-		debug!("Key to look in redis: {}", key);
+		let user: User =
+			serde_json::from_str(json_value["data"]["user"].as_str().unwrap()).unwrap();
+		let key = format!("session:{}:{}", user.email, session_id);
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
 		let session_json: Option<String> = con.get(&key).await.unwrap();
-		debug!("Loaded session from redis: {:?}", session_json);
 		match session_json {
 			Some(json) => Ok(Some(serde_json::from_str(&json)?)),
 			None => Ok(None),
@@ -68,11 +69,8 @@ impl MemoryStore for RedisStore {
 
 	async fn store_session(&self, session: Session) -> async_session::Result<Option<String>> {
 		debug!("Store session {:?}", session);
-		let key = format!(
-			"session:{}:{}",
-			session.get::<String>("email").unwrap(),
-			session.id()
-		);
+		let user = session.get::<User>("user").unwrap();
+		let key = format!("session:{}:{}", user.email, session.id());
 		let value = serde_json::to_string(&session)?;
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
 		con.set::<_, _, ()>(&key, &value).await.unwrap();
@@ -81,11 +79,8 @@ impl MemoryStore for RedisStore {
 
 	async fn destroy_session(&self, session: Session) -> async_session::Result {
 		debug!("Destroy session {:?}", session);
-		let key = format!(
-			"session:{}:{}",
-			session.get::<String>("email").unwrap(),
-			session.id()
-		);
+		let user = session.get::<User>("user").unwrap();
+		let key = format!("session:{}:{}", user.email, session.id());
 		let mut con = self.redis_client.get_async_connection().await.unwrap();
 		con.del::<_, ()>(&key).await.unwrap();
 		Ok(())

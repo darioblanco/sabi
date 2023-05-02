@@ -68,7 +68,7 @@ impl Config {
 			.expect("Missing Google client secret!");
 		let google_redirect_url = env
 			.get_var("GOOGLE_REDIRECT_URL")
-			.unwrap_or_else(|_| "http://127.0.0.1:3030/auth/discord/authorized".to_string());
+			.unwrap_or_else(|_| "http://127.0.0.1:3030/auth/google/authorized".to_string());
 		let log_level = env
 			.get_var("LOG_LEVEL")
 			.unwrap_or_else(|_| "info".to_string());
