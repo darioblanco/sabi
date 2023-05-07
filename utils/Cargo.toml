@@ -1,0 +1,5 @@
+[package]
+name = "sabi-utils"
+version = "0.1.0"
+authors = ["Dario Blanco Iturriaga <dblancoit@gmail.com>"]
+edition = "2021"

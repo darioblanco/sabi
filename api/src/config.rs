@@ -182,7 +182,7 @@ mod tests {
 		);
 		assert_eq!(
 			config.google.redirect_url.to_string(),
-			"http://127.0.0.1:3030/auth/discord/authorized".to_string()
+			"http://127.0.0.1:3030/auth/google/authorized".to_string()
 		);
 		assert_eq!(
 			config.redis_url.to_string(),

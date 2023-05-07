@@ -1,6 +1,6 @@
 use axum::Router;
 use hyper::{Body, Request, StatusCode};
-use sabi::services::hello::{routes, HelloResponse};
+use sabi_api::services::hello::{routes, HelloResponse};
 use serde_json::json;
 use tower::ServiceExt;
 

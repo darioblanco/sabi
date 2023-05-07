@@ -1,6 +1,6 @@
 use axum::{routing::get, Router};
 use hyper::{Body, Request, StatusCode};
-use sabi::handlers::{health, HealthResponse};
+use sabi_api::handlers::{health, HealthResponse};
 use tower::ServiceExt;
 
 #[tokio::test]

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use async_session::Session;
-use sabi::{
+use sabi_api::{
 	config::Config,
 	memory_store::MemoryStore,
 	services::auth::{MultiOAuthConfig, MultiOAuthProvider, OAuthConfig},

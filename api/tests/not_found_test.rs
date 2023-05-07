@@ -1,6 +1,6 @@
 use axum::Router;
 use hyper::{Body, Request, StatusCode};
-use sabi::handlers::not_found;
+use sabi_api::handlers::not_found;
 use tower::ServiceExt;
 
 #[tokio::test]
